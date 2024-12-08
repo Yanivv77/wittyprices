@@ -12,7 +12,7 @@ type Props = {
   params: { id: string }
 }
 
-export default async function ProductDetails({ params }: { params: { id: string } }) {
+export default async function ProductDetails({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const product: Product = await getProductById(id);
 
