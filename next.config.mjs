@@ -1,13 +1,14 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
- 
-  serverExternalPackages: [], 
 
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '2mb' 
-    }
+const nextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'm.media-amazon.com'
+      }
+    ]
   }
 }
 
-export default nextConfig
+export default nextConfig;
