@@ -6,26 +6,27 @@ import { connectToDB } from "../mongoose";
 import { scrapeAmazonProduct } from "../scraper";
 import { getAveragePrice, getHighestPrice, getLowestPrice } from "../utils";
 import { User } from "@/types";
+import { redirect } from "next/navigation";
 
 export async function scrapeAndStoreProduct(productUrl: string) {
-  if(!productUrl) return;
+  if (!productUrl) return;
 
   try {
     connectToDB();
-
     const scrapedProduct = await scrapeAmazonProduct(productUrl);
 
-    if(!scrapedProduct) return;
+    if(!scrapedProduct) {
+      throw new Error("Failed to scrape product");
+    }
 
     let product = scrapedProduct;
-
     const existingProduct = await Product.findOne({ url: scrapedProduct.url });
 
-    if(existingProduct) {
+    if (existingProduct) {
       const updatedPriceHistory: any = [
         ...existingProduct.priceHistory,
         { price: scrapedProduct.currentPrice }
-      ]
+      ];
 
       product = {
         ...scrapedProduct,
@@ -33,7 +34,7 @@ export async function scrapeAndStoreProduct(productUrl: string) {
         lowestPrice: getLowestPrice(updatedPriceHistory),
         highestPrice: getHighestPrice(updatedPriceHistory),
         averagePrice: getAveragePrice(updatedPriceHistory),
-      }
+      };
     }
 
     const newProduct = await Product.findOneAndUpdate(
@@ -42,9 +43,23 @@ export async function scrapeAndStoreProduct(productUrl: string) {
       { upsert: true, new: true }
     );
 
-    revalidatePath(`/products/${newProduct._id}`);
+    if (!newProduct) {
+      throw new Error("Failed to create/update product");
+    }
+
+    revalidatePath(`/products/${newProduct._id.toString()}`);
+    revalidatePath('/');
+
+    return redirect(`/products/${newProduct._id.toString()}`);
   } catch (error: any) {
-    throw new Error(`Failed to create/update product: ${error.message}`)
+    if (error?.message === 'NEXT_REDIRECT') {
+      throw error;
+    }
+    
+    console.error('Error in scrapeAndStoreProduct:', error);
+    return {
+      error: `Failed to create/update product: ${error.message}`
+    };
   }
 }
 
