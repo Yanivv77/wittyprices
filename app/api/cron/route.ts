@@ -4,7 +4,7 @@ import { getLowestPrice, getHighestPrice, getAveragePrice, getEmailNotifType } f
 import { connectToDB } from "@/lib/mongoose";
 import Product from "@/lib/models/product.model";
 import { scrapeAmazonProduct } from "@/lib/scraper";
-
+import { generateEmailBody, sendEmail } from "@/lib/nodemailer";
 
 export const maxDuration = 300; // This function can run for a maximum of 300 seconds
 export const dynamic = "force-dynamic";
@@ -60,7 +60,12 @@ export async function GET(request: Request) {
             title: updatedProduct.title,
             url: updatedProduct.url,
           };
-  
+          // Construct emailContent
+          const emailContent = await generateEmailBody(productInfo, emailNotifType);
+          // Get array of user emails
+          const userEmails = updatedProduct.users.map((user: any) => user.email);
+          // Send email notification
+          await sendEmail(emailContent, userEmails);
         }
 
         return updatedProduct;
