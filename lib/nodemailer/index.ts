@@ -14,7 +14,7 @@ export async function generateEmailBody(
   product: EmailProductInfo,
   type: NotificationType
   ) {
-  const THRESHOLD_PERCENTAGE = 40;
+  const THRESHOLD_PERCENTAGE = 25;
   // Shorten the product title
   const shortenedTitle =
     product.title.length > 20
@@ -82,12 +82,12 @@ export async function generateEmailBody(
 
 const transporter = nodemailer.createTransport({
   pool: true,
-  host: 'smtp.zoho.com', // Correct SMTP host for Zoho Mail
-  port: 465,             // Port 465 for SSL (secure)
-  secure: true,          // Use true for port 465
+  host: 'smtp.zoho.com', 
+  port: 465,             
+  secure: true,          
   auth: {
     user: 'wittyprices@zohomail.com',
-    pass: process.env.ZOHO_APP_PASSWORD, // Ensure this is set correctly in .env
+    pass: process.env.ZOHO_APP_PASSWORD, 
   },
   maxConnections: 1,
 });
