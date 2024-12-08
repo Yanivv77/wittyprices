@@ -1,11 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+ 
+  serverExternalPackages: [], 
+
   experimental: {
-    serverActions: true,
-    serverComponentsExternalPackages: ['mongoose']
-  },
-  images: {
-    domains: ['m.media-amazon.com']
+    serverActions: {
+      bodySizeLimit: '2mb' 
+    }
   }
 }
 

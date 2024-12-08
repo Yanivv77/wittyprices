@@ -19,7 +19,7 @@ const HeroCarousel = () => {
         showThumbs={false}
         autoPlay
         infiniteLoop
-        interval={3000}
+        interval={2000}
         showArrows={true}
         showStatus={false}
       >
@@ -31,7 +31,8 @@ const HeroCarousel = () => {
               fill
               sizes="100vw"
               priority
-              className="object-cover"
+              className="object-cover object-center"
+              style={{ position: 'absolute' }}
             />
           </div>
         ))}
