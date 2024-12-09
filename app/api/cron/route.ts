@@ -71,16 +71,22 @@ export async function GET(request: Request) {
           );
 
           if (emailNotifType && updatedProduct.users.length > 0) {
-            const productInfo = {
-              title: updatedProduct.title,
-              url: updatedProduct.url,
-            };
-            // Construct emailContent
-            const emailContent = await generateEmailBody(productInfo, emailNotifType);
-            // Get array of user emails
-            const userEmails = updatedProduct.users.map((user: any) => user.email);
-            // Send email notification
-            await sendEmail(emailContent, userEmails);
+            try {
+              const productInfo = {
+                title: updatedProduct.title,
+                url: updatedProduct.url,
+              };
+              const emailContent = await generateEmailBody(productInfo, emailNotifType);
+              const userEmails = updatedProduct.users.map((user: any) => user.email);
+              
+              await sendEmail(emailContent, userEmails)
+                .catch(error => {
+                  console.error(`Failed to send email for product ${updatedProduct.title}:`, error);
+                });
+            } catch (emailError) {
+              console.error(`Email processing error for ${updatedProduct.title}:`, emailError);
+              // Continue with the product update even if email fails
+            }
           }
 
           return updatedProduct;
