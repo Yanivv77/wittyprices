@@ -13,10 +13,17 @@ export async function scrapeAndStoreProduct(productUrl: string) {
   if (!productUrl) return;
 
   try {
-    connectToDB();
+    await connectToDB();
     const scrapedProduct = await scrapeAmazonProduct(productUrl);
 
-    if(!scrapedProduct) return;
+    if (!scrapedProduct) return;
+
+    if (isNaN(scrapedProduct.originalPrice) || isNaN(scrapedProduct.currentPrice)) {
+      console.error(`Invalid prices for product: ${scrapedProduct.url}`);
+      return {
+        error: `Invalid prices for product: ${scrapedProduct.url}`
+      };
+    }
 
     let product = scrapedProduct;
     const existingProduct = await Product.findOne({ url: scrapedProduct.url });
@@ -41,15 +48,8 @@ export async function scrapeAndStoreProduct(productUrl: string) {
       product,
       { upsert: true, new: true }
     );
-
-    if (!newProduct) {
-      throw new Error("Failed to create/update product");
-    }
-
     revalidatePath(`/products/${newProduct._id.toString()}`);
-    revalidatePath('/');
-
-    return redirect(`/products/${newProduct._id.toString()}`);
+    redirect(`/products/${newProduct._id.toString()}`);
   } catch (error: any) {
     if (error?.message === 'NEXT_REDIRECT') {
       throw error;
@@ -64,7 +64,7 @@ export async function scrapeAndStoreProduct(productUrl: string) {
 
 export async function getProductById(productId: string) {
   try {
-    connectToDB();
+    await connectToDB();
 
     const product = await Product.findOne({ _id: productId });
 
@@ -72,25 +72,32 @@ export async function getProductById(productId: string) {
 
     return product;
   } catch (error) {
-    console.log(error);
+    console.error('Error fetching product:', error);
+    throw error;
   }
 }
 
 export async function getAllProducts() {
   try {
-    connectToDB();
+    await connectToDB();
 
     const products = await Product.find();
-
+    if (!products) {
+      console.log('No products found');
+      return [];
+    }
+    
+    console.log(`Fetched ${products.length} products`);
     return products;
   } catch (error) {
-    console.log(error);
+    console.error('Error fetching products:', error);
+    throw error;
   }
 }
 
 export async function getSimilarProducts(productId: string) {
   try {
-    connectToDB();
+    await connectToDB();
 
     const currentProduct = await Product.findById(productId);
 
@@ -108,6 +115,7 @@ export async function getSimilarProducts(productId: string) {
 
 export async function addUserEmailToProduct(productId: string, userEmail: string) {
   try {
+    await connectToDB();
     const product = await Product.findById(productId);
 
     if(!product) return;
@@ -126,5 +134,29 @@ export async function addUserEmailToProduct(productId: string, userEmail: string
     }
   } catch (error) {
     console.log(error);
+  }
+}
+
+export async function cleanupInvalidPrices() {
+  try {
+    await connectToDB();
+    
+    // Get all products first
+    const products = await Product.find({});
+
+    // Filter and update products with invalid prices
+    for (const product of products) {
+      if (isNaN(product.originalPrice) || isNaN(product.currentPrice)) {
+        console.log(`Fixing invalid prices for product: ${product._id}`);
+        await Product.findByIdAndUpdate(product._id, {
+          $set: {
+            originalPrice: 0,
+            currentPrice: 0
+          }
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error cleaning up invalid prices:', error);
   }
 }
